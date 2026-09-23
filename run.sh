@@ -10,4 +10,4 @@ if [ -f .env ]; then
   . ./.env
   set +a
 fi
-exec .venv/bin/uvicorn app.main:app --host 127.0.0.1 --port "${PORT:-8765}" --no-proxy-headers
+exec .venv/bin/python scripts/serve.py

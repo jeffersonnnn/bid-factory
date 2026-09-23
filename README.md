@@ -72,6 +72,20 @@ OPENAI_API_KEY=your-key
 AI_MODEL=your-available-model
 ```
 
+Or use OpenRouter:
+
+```dotenv
+AI_PROVIDER=openrouter
+AI_MODEL=openai/gpt-4.1
+AI_AUDIT_MODEL=anthropic/claude-sonnet-4.6
+```
+
+Set `OPENROUTER_API_KEY` in the server environment. On macOS, `run.sh` can read the
+credential from a Keychain item with service `bid-factory.openrouter` and account
+`bid-factory`. The repository does not store the credential. OpenRouter requests
+require endpoints that accept the requested parameters, deny provider data collection,
+and enforce zero data retention. A request fails closed if no eligible endpoint exists.
+
 Restart the server after configuration changes. Keep `.env` private. The app never returns keys to the browser.
 
 Online extraction sends source text to the selected provider. Online mapping sends requirements and evidence. The independent AI audit receives a new context containing original sources, requirements, evidence and the finished draft. It receives no writer conversation. Review the provider's data terms before using customer material.
@@ -80,7 +94,12 @@ AI can suggest extraction and matches or add audit findings. It cannot approve e
 
 The proposal assembler uses approved evidence verbatim with standard section headings. This deliberately avoids free-form factual paraphrases. Improve prose through a traceable customer answer or a corrected source, then regenerate.
 
-**Current live-provider result:** the Anthropic account returned a credit-balance error. Model listing worked, but inference did not. Live AI extraction and audit remain unverified. Automated tests validate the AI boundaries with controlled responses. The human review workflow and actual file rendering passed end-to-end tests.
+**Current live-provider result (September 23, 2026):** OpenRouter authentication,
+requirement extraction, evidence extraction, evidence mapping, and a separate-model
+red-team audit completed with synthetic sources. The audit found a deliberately
+unsupported ISO 9001 claim, and final export remained blocked. The clean synthetic
+draft still requires real expert review before it can represent a production acceptance.
+See `docs/verification.md` for the exact limits.
 
 ## Export contents
 

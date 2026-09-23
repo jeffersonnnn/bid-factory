@@ -38,7 +38,13 @@ def add_requirement(db, bid_id, req: RequirementInput):
             raise HTTPException(422, 'Give a replacement reason and replace the current version only.')
         if old['mandatory'] and not req.mandatory:
             raise HTTPException(422, 'V0 cannot remove a mandatory obligation. Keep it mandatory and seek reviewer guidance.')
-    constraints = req.constraints
+    constraints = dict(req.constraints)
+    # Do not let an omitted model flag remove an explicit price-sheet obligation.
+    if req.kind == 'pricing' and re.search(r'price sheet|pricing (?:sheet|schedule)', req.quote, re.I):
+        constraints['attachment'] = True
+    if re.search(r'\bUEI\b', req.quote, re.I) and re.search(r'\bUEI\b', req.text, re.I):
+        constraints['uei'] = True
+        req.kind = 'administrative'
     if set(constraints) - {'count', 'max_pages', 'deadline', 'attachment', 'uei'}:
         raise HTTPException(422, 'Unknown requirement constraint. Record it in the requirement text for human review.')
     for key in ('count', 'max_pages'):
@@ -211,7 +217,9 @@ def map_suggestions(db, bid_id):
         result = ai.ask('Suggest evidence matches. Return {"mappings":[{"requirement_id":"REQ-id","evidence_ids":["EVD-id"]}]}. '
             'Use only supplied IDs. Never infer that evidence is sufficient. Do not use pricing from company documents.',
             {'requirements': reqs, 'evidence': [{k: e[k] for k in ('id','statement','kind')} for e in ev]})
-        for m in result.get('mappings', []):
+        for m in ai.result_list(result, 'mappings'):
+            if not isinstance(m, dict) or not isinstance(m.get('evidence_ids'), list):
+                raise HTTPException(422, 'AI suggested an invalid evidence mapping.')
             if m.get('requirement_id') not in {r['id'] for r in reqs}:
                 raise HTTPException(422, 'AI suggested a requirement outside this bid.')
             for eid in m.get('evidence_ids', []):
@@ -295,8 +303,9 @@ def generate(db, bid_id):
                   'certification':'Certifications', 'management':'Management approach',
                   'attachment':'Required attachment', 'form':'Required form', 'signature':'Signature',
                   'amendment':'Amendment acknowledgment', 'representation':'Representations'}
+        title = 'Unique entity identifier' if json.loads(req['constraints']).get('uei') else titles.get(req['kind'],'Response')
         insert(db, 'proposal_sections', id=section, bid_id=bid_id, revision=bid['revision'],
-               requirement_id=req['id'], title=titles.get(req['kind'],'Response'), position=i)
+               requirement_id=req['id'], title=title, position=i)
         for e in approved:
             # Exact evidence text is the claim boundary. No free-text factual prose.
             insert(db, 'proposal_claims', id=uid('CLM'), section_id=section, evidence_id=e['id'],

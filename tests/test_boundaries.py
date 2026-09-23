@@ -83,7 +83,7 @@ def test_ai_review_uses_original_sources_in_a_separate_context(client,monkeypatc
     _,bid,_=prepared(client)
     post(client,f'/bids/{bid}/generate')
     calls=[]
-    def fake(task,payload):
+    def fake(task,payload, **kwargs):
         calls.append((task,payload))
         return {'findings':[{'finding':'Reference comparability needs a reviewer check.','action':'Verify reference scope.','requirement_id':None}]}
     monkeypatch.setattr(ai,'ask',fake)
@@ -97,7 +97,7 @@ def test_ai_review_uses_original_sources_in_a_separate_context(client,monkeypatc
 def test_malformed_ai_audit_does_not_create_passed_run(client,monkeypatch):
     _,bid,_=prepared(client)
     post(client,f'/bids/{bid}/generate')
-    monkeypatch.setattr(ai,'ask',lambda *args:{'score':100})
+    monkeypatch.setattr(ai,'ask',lambda *args, **kwargs:{'score':100})
     r=client.post(f'/api/bids/{bid}/audit',json={**REVIEW,'expected_revision':state(client,bid)['bid']['revision'],'mode':'ai','independent_review_complete':True})
     assert r.status_code==422
     assert state(client,bid)['audits']==[]

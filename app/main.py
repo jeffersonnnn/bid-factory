@@ -27,8 +27,8 @@ security = HTTPBasic(auto_error=False)
 async def lifespan(app):
     if os.getenv('APP_MODE', 'local') != 'local' and len(os.getenv('APP_PASSWORD', '')) < 16:
         raise RuntimeError('Production mode requires APP_PASSWORD of at least 16 characters.')
-    if ai.provider() not in ('offline', 'anthropic', 'openai'):
-        raise RuntimeError('AI_PROVIDER must be offline, anthropic or openai.')
+    if ai.provider() not in ('offline', 'anthropic', 'openai', 'openrouter'):
+        raise RuntimeError('AI_PROVIDER must be offline, anthropic, openai or openrouter.')
     init()
     yield
 
@@ -94,7 +94,7 @@ def workspace():
         return {'companies': rows(db, 'SELECT * FROM companies ORDER BY created_at DESC'),
                 'bids': rows(db, 'SELECT b.*,c.name company_name FROM bids b JOIN companies c ON c.id=b.company_id ORDER BY b.created_at DESC'),
                 'ai': {'provider': ai.provider(), 'configured': ai.available(),
-                       'model': os.getenv('AI_MODEL', '')}, 'mode': os.getenv('APP_MODE','local')}
+                       'model': ai.model(), 'audit_model': ai.model('audit')}, 'mode': os.getenv('APP_MODE','local')}
 
 
 @app.post('/api/companies', dependencies=[Depends(authenticate)])
@@ -379,15 +379,29 @@ def audit(bid_id: str, body: AuditInput):
         for note in body.findings:
             issues.append(rules.finding('RED-TEAM', note, 'Resolve this finding and run a new audit.'))
         if body.mode == 'ai':
+            try:
+                _, _, rendered_pages = render_proposal(render_input(db, bid))
+            except (RuntimeError, OSError, TimeoutError) as exc:
+                raise HTTPException(503, 'Restore the document renderer before AI audit.') from exc
             payload = {'source_documents': rows(db, "SELECT name,sequence,pages FROM documents WHERE bid_id=? AND kind!='response_attachment'", (bid_id,)),
+                       'response_attachments': rows(db, "SELECT id,name,sha256,pages,warnings FROM documents WHERE bid_id=? AND kind='response_attachment'", (bid_id,)),
+                       'company_sources': rows(db, 'SELECT id,name,pages FROM documents WHERE company_id=? AND bid_id IS NULL', (bid['company_id'],)),
+                       'rendered_proposal_pages': rendered_pages,
+                       'export_behavior': 'The export includes every listed response_attachment as a separate original file. Submission controls appear in the separate internal checklist.',
                        'requirements': engine.active_requirements(db, bid_id), 'proposal': engine.draft_sections(db, bid),
                        'evidence': engine.evidence_for(db, bid), 'controls': json.loads(bid['controls'])}
             result = ai.ask('You are the independent red-team reviewer. You did not write the proposal. '
                 'Compare the ORIGINAL sources, all amendments, every mandatory obligation, evidence and finished draft. '
                 'Find omissions in extraction, compound requirements, insufficient references, invented claims, '
                 'unsupported certification, wrong prices, missing signed forms and contradictions. Do not improve prose. '
+                'Report only defects tied to source obligations or unsupported factual claims. Do not invent federal requirements. '
+                'Deadline, delivery method and page limit are operational controls, not required narrative attestations unless the source says so. '
+                'Compare the actual rendered page count to the source limit. Do not infer missing sections from nonconsecutive position numbers. '
+                'Check linked response attachments using their IDs. Require signatures only where the sources require signatures. '
+                'A named customer answer is traceable evidence, not independent verification; require additional documentary proof only when '
+                'the source requires it or the supplied evidence is conflicting or explicitly unverified. '
                 'Return {"findings":[{"finding":"specific issue","action":"specific correction","requirement_id":null}]}. '
-                'Use an empty list only if you found no issues. Findings are blocking pending correction.', payload)
+                'Use an empty list only if you found no issues. Findings are blocking pending correction.', payload, purpose='audit')
             if not isinstance(result.get('findings'), list):
                 raise HTTPException(422, 'The independent AI audit returned no valid findings list.')
             for f in result['findings']:
