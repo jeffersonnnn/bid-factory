@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Bid Factory · Review desk</title>
+    <link rel="stylesheet" href="/static/style.css" />
+    <script defer src="/static/app.js"></script>
+  </head>
+  <body>
+    <a class="skip" href="#main">Skip to work area</a>
+    <aside class="sidebar">
+      <a class="brand" href="/" aria-label="Bid Factory home"
+        ><span class="brand-symbol">b.</span
+        ><span>Bid Factory<small>Proposal review desk</small></span></a
+      >
+      <div class="sidebar-label">
+        Bid workspace<button
+          class="icon"
+          id="new-bid"
+          aria-label="Create a bid"
+        >
+          +
+        </button>
+      </div>
+      <nav id="bid-list" aria-label="Bids"></nav>
+      <div class="sidebar-label">
+        Company evidence<button
+          class="icon"
+          id="new-company"
+          aria-label="Create a company"
+        >
+          +
+        </button>
+      </div>
+      <nav id="company-list" aria-label="Companies"></nav>
+      <div class="sidebar-bottom">
+        <span class="status-dot"></span
+        ><span id="provider-label">Loading workspace</span>
+        <p>Every claim has a source.<br />Every blocker stays visible.</p>
+      </div>
+    </aside>
+    <main id="main" tabindex="-1">
+      <div id="content"><p class="loading">Opening the review desk…</p></div>
+    </main>
+    <aside
+      id="inspector"
+      class="inspector"
+      hidden
+      aria-label="Source and evidence"
+    ></aside>
+    <dialog id="dialog"><div id="dialog-content"></div></dialog>
+    <div id="notice" role="status" aria-live="polite" hidden></div>
+    <div id="busy" role="status" aria-live="polite" hidden>
+      <span class="spinner"></span><span id="busy-text">Saving…</span>
+    </div>
+  </body>
+</html>

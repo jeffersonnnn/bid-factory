@@ -1,0 +1,3 @@
+SYNTHETIC CUSTOMER PRICE SHEET
+Price sheet: Example Services offers the required services for $1200 per month for 12 months, total $14400.
+Customer: Taylor Example. Confirmed for this synthetic test only.

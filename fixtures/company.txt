@@ -1,0 +1,7 @@
+SYNTHETIC TEST COMPANY - NOT VERIFIED REAL-WORLD EVIDENCE
+Eligibility: Example Services is an eligible small business.
+UEI: ABCD1234EFGH.
+Technical approach: We will clean common areas daily using the approved site schedule.
+Reference 1: Example Services cleaned Site Alpha from 2023 to 2025. Contact: Alex Example, alpha@example.com, 202-555-0101. Contract value: $24000.
+Reference 2: Example Services cleaned Site Beta from 2022 to 2024. Contact: Blair Example, beta@example.com, 202-555-0102. Contract value: $30000.
+Reference 3: Example Services cleaned Site Gamma from 2024 to 2026. Contact: Casey Example, gamma@example.com, 202-555-0103. Contract value: $36000.
