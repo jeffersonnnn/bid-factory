@@ -2,6 +2,8 @@
 
 A private, operator-run review desk for simple civilian federal service RFQs.
 
+Start with [HANDOVER_STATUS.md](HANDOVER_STATUS.md) if you are taking over the product or service.
+
 The app implements solicitation upload → atomic requirements → company evidence → evidence mapping → targeted questions → grounded proposal → independent audit → DOCX/PDF export.
 
 ## Run locally
